@@ -1,0 +1,10 @@
+images {
+  image: "/images/grey_circle_50x50.png"
+}
+images {
+  image: "/images/red_circle_50x50.png"
+}
+images {
+  image: "/images/blue_circle_50x50.png"
+}
+extrude_borders: 2

@@ -1,2 +1,14 @@
 name: "main"
 scale_along_z: 0
+embedded_instances {
+  id: "gool"
+  data: "components {\n"
+  "  id: \"main_window\"\n"
+  "  component: \"/main_window.gui\"\n"
+  "}\n"
+  ""
+  position {
+    x: 201.0
+    y: 84.0
+  }
+}

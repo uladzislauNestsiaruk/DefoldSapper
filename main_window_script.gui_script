@@ -1,0 +1,163 @@
+local GRID_SIZE = 10
+local BUTTON_D = 50
+local PADDING = 5
+
+local GRID_LENGTH = GRID_SIZE * (BUTTON_D + PADDING)
+local X_OFFSET = tonumber(sys.get_config("display.width")) / 2 - GRID_LENGTH / 2
+local Y_OFFSET = 3 * tonumber(sys.get_config("display.height")) / 4 - 2 * GRID_LENGTH / 3
+
+local CIRCLE_ATLAS = "buttons"
+local CIRCLE_IMAGE_GREY = "grey_circle_50x50"
+local CIRCLE_IMAGE_RED = "red_circle_50x50"
+local CIRCLE_IMAGE_BLUE = "blue_circle_50x50"
+
+local START_BUTTON_TEXT = "START"
+local POINTS_COUNTER = "POINTS: 0"
+local START_BUTTON_COLOR = vmath.vector4(0.2, 0.6, 1.0, 1) 
+
+function ShuffleArray(array)
+	for i = #array, 2, -1 do
+		local j = math.random(1, i)
+		array[i], array[j] = array[j], array[i]
+	end
+	return array
+end
+
+function init_grid_graphics(self) 
+	self.grid = {}
+	for row = 1, GRID_SIZE do
+		self.grid[row] = {}
+		for col = 1, GRID_SIZE do
+			local x_cord = (col - 1) * (BUTTON_D + PADDING) + X_OFFSET	
+			local y_cord = (row - 1) * (BUTTON_D + PADDING) + Y_OFFSET
+
+			local button = gui.new_box_node(vmath.vector3(x_cord, y_cord, 0), vmath.vector3(BUTTON_D, BUTTON_D, 0))
+			gui.set_size(button, vmath.vector3(BUTTON_D, BUTTON_D, 0)) 
+			gui.set_id(button, "tile_" .. row .. "_" .. col) 
+			gui.set_position(button, vmath.vector3(x_cord, y_cord, 1))
+			gui.set_texture(button, CIRCLE_ATLAS)
+			gui.play_flipbook(button, CIRCLE_IMAGE_GREY)
+			self.grid[row][col] = button
+		end
+	end 
+end
+
+function init_other_graphics(self)
+	local button_pos = vmath.vector3(60, 60, 0) 
+	local button_size = vmath.vector3(200, 60, 0)
+
+	self.start_button = gui.new_box_node(button_pos, button_size)
+	gui.set_color(self.start_button, START_BUTTON_COLOR) 
+	
+	self.button_text = gui.new_text_node(vmath.vector3(60, 60, 1), START_BUTTON_TEXT)
+	gui.set_parent(self.button_text, self.start_button) 
+	gui.set_position(self.button_text, vmath.vector3(0, 0, 1)) 
+	gui.set_font(self.button_text, "default")
+	gui.set_color(self.button_text, vmath.vector4(1, 1, 1, 1)) 
+
+	local points_pos = vmath.vector3(tonumber(sys.get_config("display.width")) - 100, 60, 0) 
+
+	self.points_text = gui.new_text_node(points_pos, POINTS_COUNTER)
+	gui.set_font(self.points_text, "default") 
+	gui.set_color(self.points_text, vmath.vector4(1, 1, 1, 1))
+end
+
+function generate_random_grid(grid) 
+
+	local red_points = {}
+
+	for i = 1, GRID_SIZE * GRID_SIZE do
+		table.insert(red_points, i)
+	end
+
+	red_points = ShuffleArray(red_points)
+	
+	for i = 1, GRID_SIZE * GRID_SIZE do
+		local button = grid[i / GRID_SIZE][i % GRID_SIZE]
+		gui.set_texture(button, CIRCLE_ATLAS)
+		if i <= 50 then
+			gui.play_flipbook(button, CIRCLE_IMAGE_RED)
+		else 
+			gui.play_flipbook(button, CIRCLE_IMAGE_BLUE)
+		end
+	end
+	
+end
+
+function init(self)
+
+	math.randomseed(os.time())
+	
+	self.grid = {}
+	for row = 1, GRID_SIZE do
+		self.grid[row] = {}
+		for col = 1, GRID_SIZE do
+			local x_cord = (col - 1) * (BUTTON_D + PADDING) + X_OFFSET	
+			local y_cord = (row - 1) * (BUTTON_D + PADDING) + Y_OFFSET
+
+			local button = gui.new_box_node(vmath.vector3(x_cord, y_cord, 0), vmath.vector3(BUTTON_D, BUTTON_D, 0))
+			gui.set_size(button, vmath.vector3(BUTTON_D, BUTTON_D, 0)) 
+			gui.set_id(button, "tile_" .. row .. "_" .. col) 
+			gui.set_position(button, vmath.vector3(x_cord, y_cord, 1))
+			gui.set_texture(button, CIRCLE_ATLAS)
+			gui.play_flipbook(button, CIRCLE_IMAGE_GREY)
+			self.grid[row][col] = button
+		end
+	end
+
+	local button_pos = vmath.vector3(60, 60, 0) 
+	local button_size = vmath.vector3(200, 60, 0)
+
+	self.start_button = gui.new_box_node(button_pos, button_size)
+	gui.set_color(self.start_button, START_BUTTON_COLOR) 
+
+	self.button_text = gui.new_text_node(vmath.vector3(60, 60, 1), START_BUTTON_TEXT)
+	gui.set_parent(self.button_text, self.start_button) 
+	gui.set_position(self.button_text, vmath.vector3(0, 0, 1)) 
+	gui.set_font(self.button_text, "default")
+	gui.set_color(self.button_text, vmath.vector4(1, 1, 1, 1)) 
+
+	local points_pos = vmath.vector3(tonumber(sys.get_config("display.width")) - 100, 60, 0) 
+
+	self.points_text = gui.new_text_node(points_pos, POINTS_COUNTER)
+	gui.set_font(self.points_text, "default") 
+	gui.set_color(self.points_text, vmath.vector4(1, 1, 1, 1))
+	
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Learn more: https://defold.com/manuals/message-passing/
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	print("anything")
+	if (action_id == hash("click") or action_id == hash("touch")) and action.pressed then
+		print("smth pressed\n")
+		if gui.pick_node(self.start_button, action.x, action.y) then
+			print("HI\n")
+			generate_random_grid(self.grid)
+		else
+			print("touch somewhere else\n")
+		end
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end
