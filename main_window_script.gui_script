@@ -15,6 +15,8 @@ local START_BUTTON_TEXT = "START"
 local POINTS_TEXT = "POINTS: "
 local START_BUTTON_COLOR = vmath.vector4(0.2, 0.6, 1.0, 1) 
 
+local LOOSE_TEXT = "You loose with total of:"
+
 local can_interact = true
 local was_pressed_start = false
 
@@ -131,7 +133,13 @@ function gray_out_grid(grid)
 	end
 end
 
-function on_lose() 
+function on_lose(self) 
+	can_interact = false
+	self.loose_text = gui.new_text_node(vmath.vector3(tonumber(sys.get_config("display.width")) / 2,
+	3 * tonumber(sys.get_config("display.height")) / 4, 1), LOOSE_TEXT .. self.current_score .. " points")
+	gui.set_position(self.button_text, vmath.vector3(0, 0, 1)) 
+	gui.set_font(self.button_text, "default")
+	gui.set_color(self.button_text, vmath.vector4(1, 1, 1, 1)) 
 end
 
 function final(self)
@@ -153,12 +161,14 @@ function on_message(self, message_id, message, sender)
 end
 
 function on_input(self, action_id, action)
-	if not can_interact then
+	if not can_interact and not gui.pick_node(self.start_button, action.x, action.y) then
 		return
 	end
-	
 	if (action_id == hash("click") or action_id == hash("touch")) and action.pressed then
 		if gui.pick_node(self.start_button, action.x, action.y) then
+			if not can_interact then
+				self.loose_text.set_text("")
+			end
 			generate_random_grid(self.grid, self.cell_colors)
 			can_interact = false
 			timer.delay(3, false, function() gray_out_grid(self.grid) can_interact = true end)
@@ -189,7 +199,7 @@ function on_input(self, action_id, action)
 						self.current_score = self.current_score + 1
 						gui.set_text(self.score_button, POINTS_TEXT .. self.current_score)
 					else 
-						on_lose()
+						on_lose(self)
 					end
 					break
 				end
