@@ -7,4 +7,7 @@ images {
 images {
   image: "/images/blue_circle_50x50.png"
 }
+images {
+  image: "/images/blue_cool.png"
+}
 extrude_borders: 2

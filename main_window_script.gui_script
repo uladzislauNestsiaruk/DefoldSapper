@@ -21,7 +21,7 @@ local LOOSE_TEXT = "You loose with total of:"
 local can_interact = true
 local was_pressed_start = false
 
-local button_pos = vmath.vector3(60, 60, 0) 
+local button_pos = vmath.vector3(110, 50, 0) 
 local button_size = vmath.vector3(200, 60, 0)
 
 local points_pos = vmath.vector3(tonumber(sys.get_config("display.width")) - 100, 60, 0)
