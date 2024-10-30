@@ -12,70 +12,44 @@ local CIRCLE_IMAGE_RED = "red_circle_50x50"
 local CIRCLE_IMAGE_BLUE = "blue_circle_50x50"
 
 local START_BUTTON_TEXT = "START"
-local POINTS_COUNTER = "POINTS: 0"
+local POINTS_TEXT = "POINTS: "
 local START_BUTTON_COLOR = vmath.vector4(0.2, 0.6, 1.0, 1) 
 
-function ShuffleArray(array)
-	for i = #array, 2, -1 do
-		local j = math.random(1, i)
-		array[i], array[j] = array[j], array[i]
+local can_interact = true
+local was_pressed_start = false
+
+function generate_random_grid(grid, cell_colors) 
+
+	for i = 1, GRID_SIZE * GRID_SIZE do
+		cell_colors[i] = "red"
 	end
-	return array
-end
 
-function init_grid_graphics(self) 
-	self.grid = {}
-	for row = 1, GRID_SIZE do
-		self.grid[row] = {}
-		for col = 1, GRID_SIZE do
-			local x_cord = (col - 1) * (BUTTON_D + PADDING) + X_OFFSET	
-			local y_cord = (row - 1) * (BUTTON_D + PADDING) + Y_OFFSET
+	math.randomseed(os.time())
 
-			local button = gui.new_box_node(vmath.vector3(x_cord, y_cord, 0), vmath.vector3(BUTTON_D, BUTTON_D, 0))
-			gui.set_size(button, vmath.vector3(BUTTON_D, BUTTON_D, 0)) 
-			gui.set_id(button, "tile_" .. row .. "_" .. col) 
-			gui.set_position(button, vmath.vector3(x_cord, y_cord, 1))
-			gui.set_texture(button, CIRCLE_ATLAS)
-			gui.play_flipbook(button, CIRCLE_IMAGE_GREY)
-			self.grid[row][col] = button
+	local cnt_blue = 0
+
+	while cnt_blue < 50 do
+		local id = math.random(1, 100)
+		if cell_colors[id] == "red" then
+			cell_colors[id] = "blue"
+			cnt_blue = cnt_blue + 1
 		end
-	end 
-end
-
-function init_other_graphics(self)
-	local button_pos = vmath.vector3(60, 60, 0) 
-	local button_size = vmath.vector3(200, 60, 0)
-
-	self.start_button = gui.new_box_node(button_pos, button_size)
-	gui.set_color(self.start_button, START_BUTTON_COLOR) 
-	
-	self.button_text = gui.new_text_node(vmath.vector3(60, 60, 1), START_BUTTON_TEXT)
-	gui.set_parent(self.button_text, self.start_button) 
-	gui.set_position(self.button_text, vmath.vector3(0, 0, 1)) 
-	gui.set_font(self.button_text, "default")
-	gui.set_color(self.button_text, vmath.vector4(1, 1, 1, 1)) 
-
-	local points_pos = vmath.vector3(tonumber(sys.get_config("display.width")) - 100, 60, 0) 
-
-	self.points_text = gui.new_text_node(points_pos, POINTS_COUNTER)
-	gui.set_font(self.points_text, "default") 
-	gui.set_color(self.points_text, vmath.vector4(1, 1, 1, 1))
-end
-
-function generate_random_grid(grid) 
-
-	local red_points = {}
-
-	for i = 1, GRID_SIZE * GRID_SIZE do
-		table.insert(red_points, i)
 	end
-
-	red_points = ShuffleArray(red_points)
 	
 	for i = 1, GRID_SIZE * GRID_SIZE do
-		local button = grid[i / GRID_SIZE][i % GRID_SIZE]
+		local row = math.floor(i / GRID_SIZE)
+		if i % GRID_SIZE ~= 0 then
+			row = row + 1
+		end
+		local col = i % GRID_SIZE
+		if col == 0 then
+			col = GRID_SIZE
+		end
+		
+		local button = grid[row][col]
+		
 		gui.set_texture(button, CIRCLE_ATLAS)
-		if i <= 50 then
+		if cell_colors[i] == "red" then
 			gui.play_flipbook(button, CIRCLE_IMAGE_RED)
 		else 
 			gui.play_flipbook(button, CIRCLE_IMAGE_BLUE)
@@ -86,8 +60,18 @@ end
 
 function init(self)
 
-	math.randomseed(os.time())
+	msg.post(".", "acquire_input_focus")
+
+	self.was_pressed = {}
+
+	for cell_id = 1, GRID_SIZE do
+		self.was_pressed[cell_id] = false
+	end
 	
+	self.cell_colors = {}
+	self.current_color = "none"
+	self.current_score = 0
+		
 	self.grid = {}
 	for row = 1, GRID_SIZE do
 		self.grid[row] = {}
@@ -119,10 +103,35 @@ function init(self)
 
 	local points_pos = vmath.vector3(tonumber(sys.get_config("display.width")) - 100, 60, 0) 
 
-	self.points_text = gui.new_text_node(points_pos, POINTS_COUNTER)
-	gui.set_font(self.points_text, "default") 
-	gui.set_color(self.points_text, vmath.vector4(1, 1, 1, 1))
+	self.score_button = gui.new_text_node(points_pos, POINTS_TEXT .. self.current_score)
+	gui.set_font(self.score_button, "default") 
+	gui.set_color(self.score_button, vmath.vector4(1, 1, 1, 1))
 	
+end
+
+function process_cell(cell, cell_color, current_color)
+	local result = {}
+	if (current_color == "none") or (current_color == cell_color) then
+		result["status_code"] = 0
+		result["current_color"] = cell_color
+	else 
+		result["status_code"] = 1
+	end
+
+	return result
+end
+
+function gray_out_grid(grid) 
+	for row = 1, GRID_SIZE do
+		for col = 1, GRID_SIZE do
+			local button = grid[row][col]
+			gui.set_texture(button, CIRCLE_ATLAS)
+			gui.play_flipbook(button, CIRCLE_IMAGE_GREY)
+		end
+	end
+end
+
+function on_lose() 
 end
 
 function final(self)
@@ -144,14 +153,47 @@ function on_message(self, message_id, message, sender)
 end
 
 function on_input(self, action_id, action)
-	print("anything")
+	if not can_interact then
+		return
+	end
+	
 	if (action_id == hash("click") or action_id == hash("touch")) and action.pressed then
-		print("smth pressed\n")
 		if gui.pick_node(self.start_button, action.x, action.y) then
-			print("HI\n")
-			generate_random_grid(self.grid)
-		else
-			print("touch somewhere else\n")
+			generate_random_grid(self.grid, self.cell_colors)
+			can_interact = false
+			timer.delay(3, false, function() gray_out_grid(self.grid) can_interact = true end)
+			was_pressed_start = true
+		elseif was_pressed_start == true then
+			for cell_id = 1, GRID_SIZE * GRID_SIZE do
+				local row = math.floor(cell_id / GRID_SIZE)
+				if cell_id % GRID_SIZE ~= 0 then
+					row = row + 1
+				end
+				local col = cell_id % GRID_SIZE
+				if col == 0 then
+					col = GRID_SIZE
+				end
+				
+				if (not self.was_pressed[cell_id]) and gui.pick_node(self.grid[row][col], action.x, action.y) then
+					local process_result = process_cell(self.grid[row][col], self.cell_colors[cell_id], self.current_color)
+					self.was_pressed[cell_id] = true
+					gui.set_texture(self.grid[row][col], CIRCLE_ATLAS)
+					if self.cell_colors[cell_id] == "red" then
+						gui.play_flipbook(self.grid[row][col], CIRCLE_IMAGE_RED)
+					else 
+						gui.play_flipbook(self.grid[row][col], CIRCLE_IMAGE_BLUE)
+					end
+					if process_result["status_code"] == 0 then
+						self.current_color = process_result["current_color"]
+
+						self.current_score = self.current_score + 1
+						gui.set_text(self.score_button, POINTS_TEXT .. self.current_score)
+					else 
+						on_lose()
+					end
+					break
+				end
+			end
 		end
 	end
 end
